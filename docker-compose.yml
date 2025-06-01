@@ -5,10 +5,10 @@ services:
     image: mysql:8.0
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: investimentos
+      MYSQL_USER: user
+      MYSQL_PASSWORD: userpass
     ports:
       - "3306:3306"
     volumes:
@@ -21,7 +21,7 @@ services:
       - ./backend:/app
     working_dir: /app
     environment:
-      DATABASE_URL: mysql://user:userpass@db:3306/investimentos
+      - DATABASE_URL=mysql://user:userpass@db:3306/investimentos
     ports:
       - "3001:3001"
     depends_on:
