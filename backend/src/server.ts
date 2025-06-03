@@ -2,29 +2,31 @@ import Fastify from 'fastify'
 import { PrismaClient } from '@prisma/client'
 import { z } from 'zod'
 
-// Instância do Fastify e Prisma
 const app = Fastify()
 const prisma = new PrismaClient()
 
-// Schema de validação com Zod
 const clientSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
   status: z.boolean(),
 })
 
-// Schema para validar os dados do ativo
 const assetSchema = z.object({
   name: z.string().min(1),
   value: z.number().positive(),
 })
 
-// Rota: Health-check
+const allocationByNameSchema = z.object({
+  assetName: z.string().min(1),
+  amount: z.number().positive(),
+})
+
+// Health-check
 app.get('/', async () => {
   return { status: 'ok' }
 })
 
-// Rota: Criar cliente
+// Criar cliente
 app.post('/clients', async (request, reply) => {
   try {
     const body = clientSchema.parse(request.body)
@@ -35,15 +37,37 @@ app.post('/clients', async (request, reply) => {
   }
 })
 
-// Rota: Listar clientes
+// Listar clientes com resumo
 app.get('/clients', async () => {
   const clients = await prisma.client.findMany({
-    include: { assets: true },
+    include: {
+      allocations: {
+        include: { asset: true }
+      },
+      _count: {
+        select: { allocations: true }
+      }
+    }
   })
-  return clients
+
+  const formatted = clients.map(c => ({
+    id: c.id,
+    name: c.name,
+    email: c.email,
+    status: c.status,
+    allocationsCount: c._count.allocations,
+    assets: c.allocations.map(a => ({
+      id: a.asset.id,
+      name: a.asset.name,
+      value: a.asset.value,
+      amount: a.amount
+    })),
+  }))
+
+  return formatted
 })
 
-// Rota: Atualizar cliente
+// Atualizar cliente
 app.put('/clients/:id', async (request, reply) => {
   const id = Number((request.params as any).id)
   try {
@@ -58,61 +82,28 @@ app.put('/clients/:id', async (request, reply) => {
   }
 })
 
-// Criar ativo para um cliente
-app.post('/clients/:clientId/assets', async (request, reply) => {
-  const clientId = Number((request.params as any).clientId)
+// Criar ativo genérico
+app.post('/assets', async (request, reply) => {
   try {
     const body = assetSchema.parse(request.body)
-
-    // Verifica se cliente existe
-    const clientExists = await prisma.client.findUnique({ where: { id: clientId } })
-    if (!clientExists) {
-      return reply.code(404).send({ error: 'Client not found' })
-    }
-
-    // Cria ativo para cliente
-    const asset = await prisma.asset.create({
-      data: {
-        ...body,
-        clientId,
-      },
-    })
+    const asset = await prisma.asset.create({ data: body })
     return reply.code(201).send(asset)
   } catch (err) {
     return reply.code(400).send({ error: err })
   }
 })
 
-// Listar ativos de um cliente
-app.get('/clients/:clientId/assets', async (request, reply) => {
-  const clientId = Number((request.params as any).clientId)
-  try {
-    const assets = await prisma.asset.findMany({
-      where: { clientId },
-    })
-    return assets
-  } catch (err) {
-    return reply.code(500).send({ error: 'Internal Server Error' })
-  }
+// Listar todos ativos disponíveis
+app.get('/assets', async () => {
+  const assets = await prisma.asset.findMany()
+  return assets
 })
 
 // Atualizar ativo
-app.put('/clients/:clientId/assets/:assetId', async (request, reply) => {
-  const clientId = Number((request.params as any).clientId)
-  const assetId = Number((request.params as any).assetId)
-
+app.put('/assets/:id', async (request, reply) => {
+  const assetId = Number((request.params as any).id)
   try {
     const body = assetSchema.parse(request.body)
-
-    // Verifica se ativo existe e pertence ao cliente
-    const assetExists = await prisma.asset.findUnique({
-      where: { id: assetId },
-    })
-
-    if (!assetExists || assetExists.clientId !== clientId) {
-      return reply.code(404).send({ error: 'Asset not found for this client' })
-    }
-
     const updated = await prisma.asset.update({
       where: { id: assetId },
       data: body,
@@ -124,19 +115,9 @@ app.put('/clients/:clientId/assets/:assetId', async (request, reply) => {
 })
 
 // Deletar ativo
-app.delete('/clients/:clientId/assets/:assetId', async (request, reply) => {
-  const clientId = Number((request.params as any).clientId)
-  const assetId = Number((request.params as any).assetId)
-
+app.delete('/assets/:id', async (request, reply) => {
+  const assetId = Number((request.params as any).id)
   try {
-    const assetExists = await prisma.asset.findUnique({
-      where: { id: assetId },
-    })
-
-    if (!assetExists || assetExists.clientId !== clientId) {
-      return reply.code(404).send({ error: 'Asset not found for this client' })
-    }
-
     await prisma.asset.delete({ where: { id: assetId } })
     return reply.code(204).send()
   } catch (err) {
@@ -144,13 +125,81 @@ app.delete('/clients/:clientId/assets/:assetId', async (request, reply) => {
   }
 })
 
-// Rota: Ativos fixos (exibição simples)
-app.get('/assets', async () => {
-  return [
-    { name: 'Ação XYZ', value: 150.25 },
-    { name: 'Fundo ABC', value: 102.50 },
-    { name: 'CDB 2030', value: 1000.0 },
-  ]
+// Criar alocação (cliente escolhe ativo e quantidade) - por assetId (rota antiga)
+app.post('/clients/:clientId/allocations', async (request, reply) => {
+  const clientId = Number((request.params as any).clientId)
+  try {
+    // Validação com assetName
+    const { assetName, amount } = allocationByNameSchema.parse(request.body)
+
+    // Verifica se o cliente existe
+    const clientExists = await prisma.client.findUnique({ where: { id: clientId } })
+    if (!clientExists) return reply.code(404).send({ error: 'Client not found' })
+
+    // Busca ativo pelo nome
+    const asset = await prisma.asset.findFirst({ where: { name: assetName } })
+    if (!asset) return reply.code(404).send({ error: 'Asset not found' })
+
+    // Cria a alocação com assetId do ativo encontrado
+    const allocation = await prisma.allocation.create({
+      data: {
+        clientId,
+        assetId: asset.id,
+        amount,
+      },
+      include: {
+        asset: true, // se quiser retornar os dados do ativo junto
+      }
+    })
+
+    return reply.code(201).send(allocation)
+  } catch (err) {
+    return reply.code(400).send({ error: err })
+  }
+})
+
+// Nova rota: Criar alocação pelo nome do ativo (assetName) + amount
+app.post('/clients/:clientId/allocations-by-name', async (request, reply) => {
+  const clientId = Number((request.params as any).clientId)
+  try {
+    const { assetName, amount } = allocationByNameSchema.parse(request.body)
+
+    const clientExists = await prisma.client.findUnique({ where: { id: clientId } })
+    if (!clientExists) return reply.code(404).send({ error: 'Client not found' })
+
+    const asset = await prisma.asset.findFirst({ where: { name: assetName } })
+    if (!asset) return reply.code(404).send({ error: 'Asset not found' })
+
+    const allocation = await prisma.allocation.create({
+      data: {
+        clientId,
+        assetId: asset.id,
+        amount
+      },
+      include: {
+        asset: true
+      }
+    })
+
+    return reply.code(201).send(allocation)
+  } catch (err) {
+    return reply.code(400).send({ error: err })
+  }
+})
+
+// Listar alocações do cliente
+app.get('/clients/:clientId/allocations', async (request, reply) => {
+  const clientId = Number((request.params as any).clientId)
+  try {
+    const allocations = await prisma.allocation.findMany({
+      where: { clientId },
+      include: { asset: true },
+    })
+
+    return reply.send(allocations)
+  } catch (err) {
+    return reply.status(500).send({ error: 'Internal Server Error' })
+  }
 })
 
 // Start do servidor

@@ -8,17 +8,26 @@ datasource db {
 }
 
 model Client {
-  id     Int    @id @default(autoincrement())
-  name   String
-  email  String @unique
-  status Boolean
-  assets Asset[]
+  id          Int          @id @default(autoincrement())
+  name        String
+  email       String       @unique
+  status      Boolean
+  allocations Allocation[]
 }
 
 model Asset {
-  id        Int     @id @default(autoincrement())
-  name      String
-  value     Float
+  id          Int           @id @default(autoincrement())
+  name        String
+  value       Float
+  allocations Allocation[]
+}
+
+model Allocation {
+  id        Int      @id @default(autoincrement())
+  client    Client   @relation(fields: [clientId], references: [id])
   clientId  Int
-  client    Client  @relation(fields: [clientId], references: [id])
+  asset     Asset    @relation(fields: [assetId], references: [id])
+  assetId   Int
+  amount    Float
+  createdAt DateTime @default(now())
 }
