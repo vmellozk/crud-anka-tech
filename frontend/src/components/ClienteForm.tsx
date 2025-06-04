@@ -3,8 +3,8 @@
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import axios from 'axios'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { api } from '@/services/api'
 
 const clienteSchema = z.object({
   nome: z.string().min(3, 'Nome obrigatório'),
@@ -45,9 +45,9 @@ export function ClienteForm({ onSuccess, defaultValues, clienteId }: ClienteForm
       }
 
       if (clienteId) {
-        return axios.put(`http://localhost:3001/clients/${clienteId}`, payload)
+        return api.put(`/clients/${clienteId}`, payload)
       } else {
-        return axios.post('http://localhost:3001/clients', payload)
+        return api.post('/clients', payload)
       }
     },
     onSuccess: () => {
@@ -55,7 +55,8 @@ export function ClienteForm({ onSuccess, defaultValues, clienteId }: ClienteForm
       onSuccess()
     },
     onError: (error) => {
-      console.error('Mutation error:', error)
+      console.error('Erro ao salvar cliente:', error.message)
+      alert('Erro ao salvar cliente. Verifique os dados e tente novamente.')
     }
   })
 

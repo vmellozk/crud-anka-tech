@@ -1,9 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
 import { useState } from 'react'
 import { ClienteModal } from '@/components/ClienteModal'
+import { api } from '@/services/api'
 
 type Cliente = {
   id: number;
@@ -13,7 +13,7 @@ type Cliente = {
 };
 
 async function fetchClientes(): Promise<Cliente[]> {
-  const { data } = await axios.get("http://localhost:3001/clients");
+  const { data } = await api.get('/clients');
   return data;
 }
 

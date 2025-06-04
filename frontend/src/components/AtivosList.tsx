@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import axios from 'axios'
+import { api } from '@/services/api'
 
 type Ativo = {
   id: number
@@ -13,7 +13,7 @@ export function AtivosList() {
   const { data, isLoading, error } = useQuery<Ativo[]>({
     queryKey: ['ativos'],
     queryFn: async () => {
-      const response = await axios.get('http://localhost:3001/assets') // http://backend:3001/assets
+      const response = await api.get('/assets')
       return response.data
     }
   })
