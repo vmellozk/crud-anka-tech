@@ -26,7 +26,7 @@ const allocationByNameSchema = z.object({
 ;(async () => {
   // Registro do CORS para liberar frontend rodando em localhost:3000
   await app.register(cors, {
-    origin: 'http://localhost:3000',
+    origin: '*',
   })
 
   // Health-check

@@ -2,9 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import { useState } from 'react'
+import { ClienteModal } from '@/components/ClienteModal'
 
 type Cliente = {
-  id: number;     // no Prisma é Int (number no TS)
+  id: number;
   name: string;
   email: string;
   status: boolean;
@@ -21,6 +23,19 @@ export default function ClientesPage() {
     queryFn: fetchClientes,
   });
 
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [clienteEditando, setClienteEditando] = useState<Cliente | null>(null)
+
+  function abrirCadastro() {
+    setClienteEditando(null)
+    setIsModalOpen(true)
+  }
+
+  function abrirEdicao(cliente: Cliente) {
+    setClienteEditando(cliente)
+    setIsModalOpen(true)
+  }
+
   return (
     <div className="max-w-4xl mx-auto p-8">
       <h1 className="text-2xl font-bold mb-4">Clientes</h1>
@@ -28,7 +43,7 @@ export default function ClientesPage() {
       {isLoading && <p>Carregando...</p>}
       {error && <p className="text-red-500">Erro ao carregar clientes: {error.message || JSON.stringify(error)}</p>}
 
-      <button className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+      <button onClick={abrirCadastro} className="bg-blue-500 text-white px-4 py-2 rounded mb-4">
         Novo Cliente
       </button>
 
@@ -48,12 +63,26 @@ export default function ClientesPage() {
               <td className="p-2">{cliente.email}</td>
               <td className="p-2 capitalize">{cliente.status ? "ativo" : "inativo"}</td>
               <td className="p-2">
-                <button className="text-blue-600 hover:underline">Editar</button>
+                <button onClick={() => abrirEdicao(cliente)} className="text-blue-500 hover:underline">
+                  Editar
+                </button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      {/* Coloque o modal aqui, dentro do JSX */}
+      <ClienteModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        cliente={clienteEditando ? {
+          id: clienteEditando.id.toString(),
+          nome: clienteEditando.name,
+          email: clienteEditando.email,
+          status: clienteEditando.status ? 'ativo' : 'inativo'
+        } : undefined}
+      />
     </div>
   );
 }
