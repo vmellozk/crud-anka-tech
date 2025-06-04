@@ -45,9 +45,9 @@ export function ClienteForm({ onSuccess, defaultValues, clienteId }: ClienteForm
       }
 
       if (clienteId) {
-        return axios.put(`http://backend:3001/clients/${clienteId}`, payload)
+        return axios.put(`http://localhost:3001/clients/${clienteId}`, payload)
       } else {
-        return axios.post('http://backend:3001/clients', payload)
+        return axios.post('http://localhost:3001/clients', payload)
       }
     },
     onSuccess: () => {
