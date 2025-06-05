@@ -1,9 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useState } from 'react'
-import { ClienteModal } from '@/components/ClienteModal'
-import { api } from '@/services/api'
+import { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast'; // ✅ Importa o toast
+import { ClienteModal } from '@/components/ClienteModal';
+import { api } from '@/services/api';
 
 type Cliente = {
   id: number;
@@ -23,17 +24,24 @@ export default function ClientesPage() {
     queryFn: fetchClientes,
   });
 
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [clienteEditando, setClienteEditando] = useState<Cliente | null>(null)
+  // ✅ Exibe erro amigável via toast
+  useEffect(() => {
+    if (error) {
+      toast.error("Erro ao carregar clientes. Tente novamente.");
+    }
+  }, [error]);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [clienteEditando, setClienteEditando] = useState<Cliente | null>(null);
 
   function abrirCadastro() {
-    setClienteEditando(null)
-    setIsModalOpen(true)
+    setClienteEditando(null);
+    setIsModalOpen(true);
   }
 
   function abrirEdicao(cliente: Cliente) {
-    setClienteEditando(cliente)
-    setIsModalOpen(true)
+    setClienteEditando(cliente);
+    setIsModalOpen(true);
   }
 
   return (
@@ -41,7 +49,7 @@ export default function ClientesPage() {
       <h1 className="text-2xl font-bold mb-4">Clientes</h1>
 
       {isLoading && <p>Carregando...</p>}
-      {error && <p className="text-red-500">Erro ao carregar clientes: {error.message || JSON.stringify(error)}</p>}
+      {error && <p className="text-red-500">Erro ao carregar clientes.</p>}
 
       <button onClick={abrirCadastro} className="bg-blue-500 text-white px-4 py-2 rounded mb-4">
         Novo Cliente
