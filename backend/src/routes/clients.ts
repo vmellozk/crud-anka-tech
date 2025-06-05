@@ -76,4 +76,15 @@ export const clientRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(500).send({ error: 'Internal Server Error' })
     }
   })
+
+  // Deletar cliente
+  app.delete('/:id', async (request, reply) => {
+    const clientId = Number((request.params as any).id)
+    try {
+      await prisma.client.delete({ where: { id: clientId } })
+      return reply.code(204).send()
+    } catch (err) {
+      return reply.code(500).send({ error: 'Internal Server Error' })
+    }
+  })
 }

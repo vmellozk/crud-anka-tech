@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast'; // ✅ Importa o toast
 import { ClienteModal } from '@/components/ClienteModal';
@@ -19,6 +19,8 @@ async function fetchClientes(): Promise<Cliente[]> {
 }
 
 export default function ClientesPage() {
+  const queryClient = useQueryClient();
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["clientes"],
     queryFn: fetchClientes,
@@ -42,6 +44,19 @@ export default function ClientesPage() {
   function abrirEdicao(cliente: Cliente) {
     setClienteEditando(cliente);
     setIsModalOpen(true);
+  }
+
+  async function excluirCliente(id: number) {
+    const confirmar = confirm("Tem certeza que deseja excluir este cliente?");
+    if (!confirmar) return;
+
+    try {
+      await api.delete(`/clients/${id}`);
+      toast.success("Cliente excluído com sucesso.");
+      queryClient.invalidateQueries({ queryKey: ["clientes"] });
+    } catch (err) {
+      toast.error("Erro ao excluir cliente.");
+    }
   }
 
   return (
@@ -70,9 +85,12 @@ export default function ClientesPage() {
               <td className="p-2">{cliente.name}</td>
               <td className="p-2">{cliente.email}</td>
               <td className="p-2 capitalize">{cliente.status ? "ativo" : "inativo"}</td>
-              <td className="p-2">
+              <td className="p-2 space-x-2">
                 <button onClick={() => abrirEdicao(cliente)} className="text-blue-500 hover:underline">
                   Editar
+                </button>
+                <button onClick={() => excluirCliente(cliente.id)} className="text-red-500 hover:underline">
+                  Excluir
                 </button>
               </td>
             </tr>
