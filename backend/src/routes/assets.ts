@@ -22,11 +22,28 @@ export const assetRoutes: FastifyPluginAsync = async (app) => {
     return assets
   })
 
-  // Atualizar ativo
+  // Atualizar ativo (restrição: se tiver alocação, só pode editar valor)
   app.put('/:id', async (request, reply) => {
     const assetId = Number((request.params as any).id)
     try {
       const body = assetSchema.parse(request.body)
+
+      // Verificar se há alocações com este ativo
+      const hasAllocations = await prisma.allocation.findFirst({
+        where: { assetId },
+      })
+
+      if (hasAllocations) {
+        // Só permitir alterar o value se já tiver alocação
+        const updated = await prisma.asset.update({
+          where: { id: assetId },
+          data: {
+            value: body.value,
+          },
+        })
+        return updated
+      }
+
       const updated = await prisma.asset.update({
         where: { id: assetId },
         data: body,
@@ -45,6 +62,27 @@ export const assetRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(204).send()
     } catch (err) {
       return reply.code(500).send({ error: 'Internal Server Error' })
+    }
+  })
+
+  // Atualizar quantidade (amount) da alocação
+  app.put('/allocations/:id', async (request, reply) => {
+    const allocationId = Number((request.params as any).id)
+    const { amount } = request.body as { amount: number }
+
+    if (amount <= 0) {
+      return reply.code(400).send({ error: 'Quantidade inválida.' })
+    }
+
+    try {
+      const updated = await prisma.allocation.update({
+        where: { id: allocationId },
+        data: { amount },
+        include: { asset: true },
+      })
+      return updated
+    } catch (err) {
+      return reply.code(500).send({ error: 'Erro ao atualizar alocação.' })
     }
   })
 }
