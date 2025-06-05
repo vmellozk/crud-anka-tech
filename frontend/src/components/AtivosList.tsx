@@ -13,8 +13,15 @@ export function AtivosList() {
   const { data, isLoading, error } = useQuery<Ativo[]>({
     queryKey: ['ativos'],
     queryFn: async () => {
-      const response = await api.get('/assets')
-      return response.data
+      try {
+        const response = await api.get('/assets')
+        return response.data
+      } catch (err) {
+        // Exibir erro amigável para o usuário
+        alert('Erro ao carregar os ativos. Por favor, tente novamente mais tarde.')
+        // Repassa o erro para o React Query tratar como erro
+        throw err
+      }
     }
   })
 

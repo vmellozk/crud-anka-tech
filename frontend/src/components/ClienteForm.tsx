@@ -38,16 +38,23 @@ export function ClienteForm({ onSuccess, defaultValues, clienteId }: ClienteForm
 
   const mutation = useMutation<void, Error, ClienteFormData>({
     mutationFn: async (data) => {
-      const payload = {
-        name: data.nome,
-        email: data.email,
-        status: data.status === 'ativo',
-      }
+      try {
+        const payload = {
+          name: data.nome,
+          email: data.email,
+          status: data.status === 'ativo',
+        }
 
-      if (clienteId) {
-        return api.put(`/clients/${clienteId}`, payload)
-      } else {
-        return api.post('/clients', payload)
+        if (clienteId) {
+          return await api.put(`/clients/${clienteId}`, payload)
+        } else {
+          return await api.post('/clients', payload)
+        }
+      } catch (error) {
+        // Alerta amigável para o usuário
+        alert('Erro ao salvar cliente. Verifique os dados e tente novamente.')
+        // Lança o erro para que o onError também capture
+        throw error
       }
     },
     onSuccess: () => {
@@ -56,15 +63,18 @@ export function ClienteForm({ onSuccess, defaultValues, clienteId }: ClienteForm
     },
     onError: (error) => {
       console.error('Erro ao salvar cliente:', error.message)
-      alert('Erro ao salvar cliente. Verifique os dados e tente novamente.')
+      // Já alertei no try/catch
     }
   })
 
   return (
-    <form onSubmit={handleSubmit((data) => { 
-      console.log('Form submit data:', data); 
-      mutation.mutate(data);
-    })} className="space-y-4">
+    <form
+      onSubmit={handleSubmit((data) => {
+        console.log('Form submit data:', data)
+        mutation.mutate(data)
+      })}
+      className="space-y-4"
+    >
       <div>
         <label className="block">Nome:</label>
         <input {...register('nome')} className="border p-2 w-full rounded" />
