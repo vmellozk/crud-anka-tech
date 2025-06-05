@@ -207,6 +207,22 @@ const allocationByNameSchema = z.object({
     }
   })
 
+  // Buscar cliente por ID
+  app.get('/clients/:id', async (request, reply) => {
+    const id = Number((request.params as any).id)
+    try {
+      const client = await prisma.client.findUnique({
+        where: { id },
+      })
+      if (!client) {
+        return reply.code(404).send({ error: 'Client not found' })
+      }
+      return reply.send(client)
+    } catch (err) {
+      return reply.code(500).send({ error: 'Internal Server Error' })
+    }
+  })
+
   // Start do servidor
   app.listen({ port: 3001, host: '0.0.0.0' }, (err) => {
     if (err) {
