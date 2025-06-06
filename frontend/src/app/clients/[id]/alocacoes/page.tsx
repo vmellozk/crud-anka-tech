@@ -67,8 +67,17 @@ export default function AlocacoesDoClientePage() {
   })
 
   useEffect(() => {
-    if (error) toast.error('Erro ao carregar alocações.')
-    if (errorAssets) toast.error('Erro ao carregar ativos.')
+    if (error) {
+      if ((error as any).response?.status === 404) {
+        toast.error('Cliente não encontrado.')
+      } else {
+        toast.error('Erro ao carregar alocações.')
+      }
+    }
+
+    if (errorAssets) {
+      toast.error('Erro ao carregar ativos.')
+    }
   }, [error, errorAssets])
 
   const [assetName, setAssetName] = useState('')
