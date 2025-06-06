@@ -16,14 +16,11 @@ services:
 
   backend:
     build: ./backend
-    command: sh -c "npx prisma migrate deploy && npx ts-node prisma/seed.ts && tsx src/server.ts"
-    volumes:
-      - ./backend:/app
+    ports:
+      - "3001:3001"
     working_dir: /app
     environment:
       - DATABASE_URL=mysql://user:userpass@db:3306/investimentos
-    ports:
-      - "3001:3001"
     depends_on:
       - db
 
@@ -34,6 +31,7 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+      - /app/.next
     working_dir: /app
     command: npm run dev
     depends_on:

@@ -1,26 +1,32 @@
 # Usa imagem oficial Node.js (versão LTS)
 FROM node:18-alpine
 
-# Diretório de trabalho dentro do container
+# Instala bash
+RUN apk add --no-cache bash
+
+# Define diretório de trabalho
 WORKDIR /app
 
-# Copia package.json e package-lock.json para instalar dependências
+# Copia apenas arquivos de dependência
 COPY package*.json ./
 
-# Instala as dependências (prod + dev)
+# Instala as dependências do projeto
 RUN npm install
 
-# Instala tsx globalmente para rodar TS direto
+# Instala tsx globalmente para rodar TS diretamente
 RUN npm install -g tsx
 
-# Copia todo o código fonte para o container
+# Instala o cliente Prisma
+RUN npm install @prisma/client
+
+# Copia todo o restante do código (inclusive wait-for-it.sh)
 COPY . .
 
-# Gera o client Prisma (compila schema.prisma)
+# Gera o Prisma Client
 RUN npx prisma generate
 
-# Expõe a porta que o Fastify vai usar
+# Expõe a porta usada pelo Fastify
 EXPOSE 3001
 
-# Comando para rodar a aplicação
-CMD ["sh", "-c", "npx prisma migrate deploy && tsx src/server.ts"]
+# Comando padrão ao iniciar o container
+CMD ["sh", "-c", "./wait-for-it.sh db:3306 -- npx prisma migrate deploy && npx ts-node prisma/seed.ts && tsx src/server.ts"]
