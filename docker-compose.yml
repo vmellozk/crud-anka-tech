@@ -16,7 +16,7 @@ services:
 
   backend:
     build: ./backend
-    command: sh -c "npx prisma migrate dev && tsx src/server.ts"
+    command: sh -c "npx prisma migrate deploy && npx ts-node prisma/seed.ts && tsx src/server.ts"
     volumes:
       - ./backend:/app
     working_dir: /app
