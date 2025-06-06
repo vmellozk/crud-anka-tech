@@ -2,6 +2,77 @@
 
 [![Assista à apresentação no YouTube](https://img.youtube.com/vi/hfeHjI23rsE/maxresdefault.jpg)](https://www.youtube.com/watch?v=hfeHjI23rsE)
 
+## 🚀 Passo a Passo para Rodar o Projeto
+
+1. **Configure o arquivo `.env`**
+
+Antes de qualquer coisa, crie um arquivo `.env` na raiz do projeto e na pasta backend com as seguintes variáveis de ambiente:
+
+```env
+MYSQL_ROOT_PASSWORD=your_root_password
+MYSQL_DATABASE=your_database
+MYSQL_USER=your_user
+MYSQL_PASSWORD=your_user_password
+DATABASE_URL="mysql://user:password@db:3306/dbname"
+```
+
+> ⚠️ **Importante**: nunca comite o arquivo `.env` com credenciais reais em repositórios públicos.  
+> Os valores acima são apenas exemplos, o original está comigo — preencha com as variáveis corretas do seu ambiente local.
+
+2. **Clone o repositório**:
+
+```bash
+git clone https://github.com/vmellozk/crud-anka-tech.git
+cd crud-anka-tech
+```
+
+3. **Build dos containers e instalação das dependências**:
+
+Após clonar o projeto, execute o comando abaixo para construir as imagens Docker e instalar todas as dependências:
+
+```bash
+docker-compose up --build
+```
+
+> Após a finalização do processo, pressione `Ctrl + C` para sair dos logs e continuar com os próximos comandos.
+
+4. **Inicie os containers manualmente**:
+
+```bash
+docker start crud-anka-tech-db-1 crud-anka-tech-backend-1 crud-anka-tech-frontend-1
+```
+
+5. **Acesse o container do banco de dados**:
+
+```bash
+docker compose exec db mysql -u root -p
+```
+
+> Insira a senha configurada no arquivo `.env` (MYSQL_ROOT_PASSWORD).
+
+6. **Conceda permissões no MySQL**:
+
+Dentro do MySQL (já logado no passo anterior), execute os comandos abaixo:
+
+```sql
+GRANT ALL PRIVILEGES ON *.* TO 'user'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+```
+
+> Em seguida, digite `exit` para sair do MySQL e voltar ao terminal.
+
+7. **Reinicie todos os containers**:
+
+```bash
+docker stop $(docker ps -q)
+docker start crud-anka-tech-db-1 crud-anka-tech-backend-1 crud-anka-tech-frontend-1
+```
+
+---
+
+✅ Pronto! O ambiente está configurado, permissões concedidas e tudo rodando corretamente.  
+Acesse a URL exibida nos logs do Docker para utilizar a aplicação.
+
 ## 📁 Estrutura do Projeto
 
 ```
